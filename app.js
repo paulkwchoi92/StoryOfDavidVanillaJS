@@ -1,10 +1,14 @@
 const mongoose = require("mongoose");
 const db =
   "mongodb+srv://storyofdavidadmin:2J5R4syhsooL9rwe@cluster0-ach4e.mongodb.net/test?retryWrites=true&w=majority";
+const bodyParser = require("body-parser");
+const axios = require("axios");
 
 var express = require("express");
 var app = express();
 var serv = require("http").Server(app);
+const accounts = require("./routes/accounts");
+const Account = require("./models/account");
 
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/client/index.html");
@@ -15,6 +19,20 @@ mongoose
   .catch((err) => console.log(err));
 
 app.use("/client", express.static(__dirname + "/client"));
+app.use(
+  bodyParser.urlencoded({
+    limit: "50mb",
+    extended: false,
+    parameterLimit: 100000,
+  })
+);
+
+app.use("/api/accounts", accounts);
+
+// Parse application/json.
+app.use(
+  bodyParser.json({ limit: "50mb", extended: false, parameterLimit: 100000 })
+);
 
 serv.listen(2000);
 console.log("Server started.");
@@ -173,28 +191,65 @@ var USERS = {
   bob3: "ttt",
 };
 
+// var isValidPassword = function (data, cb) {
+//   db.account.find(
+//     { username: data.username, password: data.password },
+//     function (err, res) {
+//       if (res.length > 0) cb(true);
+//       else cb(false);
+//     }
+//   );
+// };
+// var isUsernameTaken = function (data, cb) {
+//   db.account.find({ username: data.username }, function (err, res) {
+//     if (res.length > 0) cb(true);
+//     else cb(false);
+//   });
+// };
+// var addUser = function (data, cb) {
+//   db.account.insert(
+//     { username: data.username, password: data.password },
+//     function (err) {
+//       cb();
+//     }
+//   );
+// };
+// modifeid
 var isValidPassword = function (data, cb) {
-  db.account.find(
-    { username: data.username, password: data.password },
-    function (err, res) {
-      if (res.length > 0) cb(true);
-      else cb(false);
-    }
-  );
+  // db.account.find(
+  //   { username: data.username, password: data.password },
+  //   function (err, res) {
+  //     if (res.length > 0) cb(true);
+  //     else cb(false);
+  //   }
+  // );
 };
-var isUsernameTaken = function (data, cb) {
-  db.account.find({ username: data.username }, function (err, res) {
-    if (res.length > 0) cb(true);
-    else cb(false);
-  });
+var isUsernameTaken =  async function (data, cb) {
+  let foundaccount = await Account.findOne({ username: data.username }
+    // , function (err, res) {
+    // if (res.length > 0) cb(true);
+    // else cb(false);
+    // }
+  );
+  if (foundaccount) {
+    cb(true)
+  } else {
+    cb(false)
+  }
 };
 var addUser = function (data, cb) {
-  db.account.insert(
-    { username: data.username, password: data.password },
-    function (err) {
-      cb();
-    }
-  );
+ const newUser = new Account({
+   username: data.username,
+   password: data.password,
+ });
+ newUser
+   .save()
+  //  .then((res) => {
+  //    return "success";
+  //  })
+   .then(function (err) {
+     cb();
+   });
 };
 
 var io = require("socket.io")(serv, {});
