@@ -6,21 +6,25 @@
 </div>
 
 <div id="gameDiv" style="display:none;">
-  <canvas id="ctx" width="500" height="500" style="border:1px solid #000000;"></canvas>
+  <canvas id="ctx" width="1000" height="1000" style="border:1px solid #000000;"></canvas>
 
-  <div id="chat-text" style="width:500px;height:100px;overflow-y:scroll">
+  <div id="chat-text" style="width:400px;height:100px;overflow-y:scroll">
     <div>Hello!</div>
   </div>
 
   <form id="chat-form">
-    <input id="chat-input" type="text" style="width:500px"></input>
+    <input id="chat-input" type="text" style="width:400px"></input>
   </form>
 </div>
 
+<!-- <div class="scoreboard" width="1000" height="1000" style="border:1px solid #000000;">
+  <h1>Player</h1>
+</div> -->
+
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script>
-  var WIDTH = 500;
-  var HEIGHT = 500;
+  var WIDTH = 1000;
+  var HEIGHT = 1000;
   var socket = io();
 
   //sign
@@ -199,7 +203,7 @@
   setInterval(function () {
     if (!selfId)
       return;
-    ctx.clearRect(0, 0, 500, 500);
+    ctx.clearRect(0, 0, 1000, 1000);
     drawMap();
     drawScore();
     for (var i in Player.list)
