@@ -1,38 +1,14 @@
-const mongoose = require("mongoose");
-const db =
-  "mongodb+srv://storyofdavidadmin:2J5R4syhsooL9rwe@cluster0-ach4e.mongodb.net/test?retryWrites=true&w=majority";
-const bodyParser = require("body-parser");
-const axios = require("axios");
+var mongojs = require("mongojs");
+var db = mongojs("localhost:27017/myGame", ["account", "progress"]);
 
 var express = require("express");
 var app = express();
 var serv = require("http").Server(app);
-const accounts = require("./routes/accounts");
-const Account = require("./models/account");
 
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/client/index.html");
 });
-mongoose
-  .connect(db, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("Connected to MongoDB successfully"))
-  .catch((err) => console.log(err));
-
 app.use("/client", express.static(__dirname + "/client"));
-app.use(
-  bodyParser.urlencoded({
-    limit: "50mb",
-    extended: false,
-    parameterLimit: 100000,
-  })
-);
-
-app.use("/api/accounts", accounts);
-
-// Parse application/json.
-app.use(
-  bodyParser.json({ limit: "50mb", extended: false, parameterLimit: 100000 })
-);
 
 serv.listen(2000);
 console.log("Server started.");
@@ -54,7 +30,6 @@ var Entity = function () {
     self.x += self.spdX;
     self.y += self.spdY;
   };
-
   self.getDistance = function (pt) {
     return Math.sqrt(Math.pow(self.x - pt.x, 2) + Math.pow(self.y - pt.y, 2));
   };
@@ -70,7 +45,6 @@ var Player = function (id) {
   self.pressingUp = false;
   self.pressingDown = false;
   self.pressingAttack = false;
-  self.attackMultiple = false;
   self.mouseAngle = 0;
   self.maxSpd = 10;
 
@@ -80,14 +54,9 @@ var Player = function (id) {
     super_update();
 
     if (self.pressingAttack) {
-      if (self.attackMultiple) {
-        for (var i = -3; i < 3; i++) self.shootBullet(self.mouseAngle);
-      } else {
-        self.shootBullet(self.mouseAngle);
-      }
+      self.shootBullet(self.mouseAngle);
     }
   };
-
   self.shootBullet = function (angle) {
     var b = Bullet(self.id, angle);
     b.x = self.x;
@@ -104,6 +73,13 @@ var Player = function (id) {
     else self.spdY = 0;
   };
   Player.list[id] = self;
+
+  initPack.player.push({
+    id: self.id,
+    x: self.x,
+    y: self.y,
+    number: self.number,
+  });
   return self;
 };
 Player.list = {};
@@ -116,14 +92,11 @@ Player.onConnect = function (socket) {
     else if (data.inputId === "down") player.pressingDown = data.state;
     else if (data.inputId === "attack") player.pressingAttack = data.state;
     else if (data.inputId === "mouseAngle") player.mouseAngle = data.state;
-    else if (data.inputId === "attackMultiple") {
-      player.attackMultiple = data.state;
-      player.pressingAttack = data.state;
-    }
   });
 };
 Player.onDisconnect = function (socket) {
   delete Player.list[socket.id];
+  removePack.player.push(socket.id);
 };
 Player.update = function () {
   var pack = [];
@@ -131,9 +104,9 @@ Player.update = function () {
     var player = Player.list[i];
     player.update();
     pack.push({
+      id: player.id,
       x: player.x,
       y: player.y,
-      number: player.number,
     });
   }
   return pack;
@@ -155,101 +128,63 @@ var Bullet = function (parent, angle) {
     for (var i in Player.list) {
       var p = Player.list[i];
       if (self.getDistance(p) < 32 && self.parent !== p.id) {
-        // handle collsion. ex: hp --
+        //handle collision. ex: hp--;
         self.toRemove = true;
       }
     }
   };
   Bullet.list[self.id] = self;
+  initPack.bullet.push({
+    id: self.id,
+    x: self.x,
+    y: self.y,
+  });
   return self;
 };
 Bullet.list = {};
 
 Bullet.update = function () {
-  // if (Math.random() < 0.1) {
-  //   Bullet(Math.random() * 360);
-  // }
-
   var pack = [];
   for (var i in Bullet.list) {
     var bullet = Bullet.list[i];
     bullet.update();
-    if (bullet.toRemove) delete Bullet.list[i];
-    pack.push({
-      x: bullet.x,
-      y: bullet.y,
-    });
+    if (bullet.toRemove) {
+      delete Bullet.list[i];
+      removePack.bullet.push(bullet.id);
+    } else
+      pack.push({
+        id: bullet.id,
+        x: bullet.x,
+        y: bullet.y,
+      });
   }
   return pack;
 };
 
 var DEBUG = true;
-var USERS = {
-  //username:password
-  bob: "asd",
-  bob2: "bob",
-  bob3: "ttt",
-};
 
-// var isValidPassword = function (data, cb) {
-//   db.account.find(
-//     { username: data.username, password: data.password },
-//     function (err, res) {
-//       if (res.length > 0) cb(true);
-//       else cb(false);
-//     }
-//   );
-// };
-// var isUsernameTaken = function (data, cb) {
-//   db.account.find({ username: data.username }, function (err, res) {
-//     if (res.length > 0) cb(true);
-//     else cb(false);
-//   });
-// };
-// var addUser = function (data, cb) {
-//   db.account.insert(
-//     { username: data.username, password: data.password },
-//     function (err) {
-//       cb();
-//     }
-//   );
-// };
-// modifeid
 var isValidPassword = function (data, cb) {
-  // db.account.find(
-  //   { username: data.username, password: data.password },
-  //   function (err, res) {
-  //     if (res.length > 0) cb(true);
-  //     else cb(false);
-  //   }
-  // );
-};
-var isUsernameTaken =  async function (data, cb) {
-  let foundaccount = await Account.findOne({ username: data.username }
-    // , function (err, res) {
-    // if (res.length > 0) cb(true);
-    // else cb(false);
-    // }
+  db.account.find(
+    { username: data.username, password: data.password },
+    function (err, res) {
+      if (res.length > 0) cb(true);
+      else cb(false);
+    }
   );
-  if (foundaccount) {
-    cb(true)
-  } else {
-    cb(false)
-  }
+};
+var isUsernameTaken = function (data, cb) {
+  db.account.find({ username: data.username }, function (err, res) {
+    if (res.length > 0) cb(true);
+    else cb(false);
+  });
 };
 var addUser = function (data, cb) {
- const newUser = new Account({
-   username: data.username,
-   password: data.password,
- });
- newUser
-   .save()
-  //  .then((res) => {
-  //    return "success";
-  //  })
-   .then(function (err) {
-     cb();
-   });
+  db.account.insert(
+    { username: data.username, password: data.password },
+    function (err) {
+      cb();
+    }
+  );
 };
 
 var io = require("socket.io")(serv, {});
@@ -267,7 +202,6 @@ io.sockets.on("connection", function (socket) {
       }
     });
   });
-
   socket.on("signUp", function (data) {
     isUsernameTaken(data, function (res) {
       if (res) {
@@ -290,13 +224,16 @@ io.sockets.on("connection", function (socket) {
       SOCKET_LIST[i].emit("addToChat", playerName + ": " + data);
     }
   });
-  //remove under code before deloying
+
   socket.on("evalServer", function (data) {
     if (!DEBUG) return;
     var res = eval(data);
     socket.emit("evalAnswer", res);
   });
 });
+
+var initPack = { player: [], bullet: [] };
+var removePack = { player: [], bullet: [] };
 
 setInterval(function () {
   var pack = {
@@ -306,6 +243,12 @@ setInterval(function () {
 
   for (var i in SOCKET_LIST) {
     var socket = SOCKET_LIST[i];
-    socket.emit("newPositions", pack);
+    socket.emit("init", initPack);
+    socket.emit("update", pack);
+    socket.emit("remove", removePack);
   }
+  initPack.player = [];
+  initPack.bullet = [];
+  removePack.player = [];
+  removePack.bullet = [];
 }, 1000 / 25);
