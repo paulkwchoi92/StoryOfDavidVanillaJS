@@ -11,9 +11,7 @@
     "nodemon": "^2.0.4",
     "socket.io": "^2.3.0"
   },
-  "engines": {
-    "node": "4.1.x"
-  },
+  
   "devDependencies": {
     "nodemon": "^2.0.4"
   },
