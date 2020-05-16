@@ -45,7 +45,7 @@ var addUser = function (data, cb) {
 	});*/
 };
 
-var io = require("socket.io")(serv, {});
+var io = require("socket.io").listen(serv);
 io.sockets.on("connection", function (socket) {
   socket.id = Math.random();
   SOCKET_LIST[socket.id] = socket;
