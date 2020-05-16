@@ -10,8 +10,6 @@
     "mongoose": "^5.9.14",
     "nodemon": "^2.0.4",
     "socket.io": "^2.3.0",
-    "socket.js": "^0.1.4",
-    "v8-profiler": "^5.7.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
