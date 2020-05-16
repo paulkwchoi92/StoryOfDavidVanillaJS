@@ -2,7 +2,7 @@
 var db = null; //mongojs('localhost:27017/myGame', ['account','progress']);
 
 // require("./Entity");
-require("./client/Inventory");
+// require("./client/Inventory");
 
 var express = require("express");
 var app = express();
